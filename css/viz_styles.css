@@ -1,0 +1,62 @@
+
+/************************************************************************/
+/****************** Tools and Settings Bars *****************************/
+/************************************************************************/
+
+
+/* override the default handle width because I load this file last */
+.ui-slider .ui-slider-handle { width: 8px; margin-left: -8px; }
+ 
+.verticalLine {
+
+    height: 30px;
+    margin:5px 0px 5px 5px;
+    float:left;
+    border-left: solid #FFFFFF;
+    border-width:thin;
+
+}
+
+.barTitles{
+
+  font-family:Arial,Helvetica,sans-serif;
+  float:left;
+  margin:10px 0px 0px 5px;
+  color:black;
+  font-weight:bold;
+
+}
+
+.toolBar{
+
+  width: 800px;
+  height: 40px;
+  background-color:#E8E8E8;  /*#A6CEE3; */
+
+  border:1px solid;
+  border-color: #FFFFFF;
+  border-radius:5px;
+
+}
+ 
+.SettingsTextDiv{
+  
+  font-family:Arial,Helvetica,sans-serif;
+  font-size:12px;
+
+  float:left;
+  margin:12px 0px 0px 5px;
+
+}
+
+
+/***** Sliders ********/
+
+.slider{
+  float: left;
+  width: 65px; 
+  margin: 5px;
+}
+
+ 
+ 

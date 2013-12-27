@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+<head>
+
+<!-- d3 -->
+<script type="text/javascript" src="libs/d3.v3.min.js"></script>   
+
+<!-- jquery -->
+<script type="text/javascript" src="libs/jquery-1.9.1.js"></script>
+<script type="text/javascript" src="libs/jquery-ui-1.10.3.custom.js"></script>
+
+<script type="text/javascript" src="libs/underscore-min.js"></script>
+
+ 
+<!-- helper js functions -->
+<!-- <script type="text/javascript" src="js/helperFunctions.js"></script>   -->
+ 
+<!-- css -->
+<link rel="stylesheet" type="text/css" href="css/jquery-ui-1.10.3.custom.css"/>
+<link rel="stylesheet" type="text/css" href="css/viz_styles.css"/>
+    <link href='http://fonts.googleapis.com/css?family=Varela+Round|Carrois+Gothic+SC|Karla|Quantico|Audiowide' rel='stylesheet' type='text/css'>
+
+</head> 
+
+<style>
+
+#sliderNumberOfPaths{
+  width: 200px; 
+  margin: 10px;
+}
+
+#sliderPosition{
+  width: 200px; 
+  margin: 10px;
+}
+
+.customFont{
+  font-family: 'Karla' ;
+}
+ 
+
+</style>
+<body >
+ 
+  <h1 class="customFont"> Feynman Path Integral in d3.js </h1>
+
+     <div class="toolBar">
+        <span class="barTitles">Parameters </span>
+
+        <div class="verticalLine">
+        </div>
+        <div class="SettingsTextDiv">
+          Position
+        </div>
+        <div id="sliderPosition" class="slider"> 
+        </div>
+        <div class="SettingsTextDiv" id="sliderValuePosition">
+
+        </div>
+        <div class="verticalLine">
+        </div>
+        <div class="SettingsTextDiv">
+           Number of Paths
+        </div>
+        <div id="sliderNumberOfPaths" class="slider"> 
+        </div>
+        <div class="SettingsTextDiv" id="sliderValueNumberOfPaths">
+        </div>
+     </div> 
+  <br>
+<script>
+ 
+var position = 0 ;
+var nbrOfPaths = 6 ;
+
+function initPosition(){
+  position=0
+  $(function(){
+      $( "#sliderPosition" ).slider({min: -10, max: 10, step:1, value:0});
+  });
+ 
+  $( "#sliderValuePosition" ).text(position);
+
+  $("#sliderPosition").bind( "slide", function(event, ui) { position  = ui.value;
+                                                          $( "#sliderValuePosition" ).text(position);
+  });
+
+}
+
+function initNumberOfPaths(){
+
+  $(function(){
+      $( "#sliderNumberOfPaths" ).slider({min: 2, max: 10, step:1, value:6});
+  });
+
+  $( "#sliderValueNumberOfPaths" ).text(position);
+  $("#sliderNumberOfPaths").bind( "slide", function(event, ui) { nbrOfPaths  = ui.value; 
+                                                                 $( "#sliderValueNumberOfPaths" ).text(nbrOfPaths);
+  });
+
+}
+
+initNumberOfPaths();
+initPosition();
+
+</script>
+
+
+</body>
+</html>
