@@ -25,6 +25,12 @@
 
 <style>
 
+.axis path, .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
 #sliderNumberOfPaths{
   width: 200px; 
   margin: 10px;
@@ -39,9 +45,8 @@
   font-family: 'Karla' ;
 }
  
-
 </style>
-<body >
+<body>
  
   <h1 class="customFont"> Feynman Path Integral in d3.js </h1>
 
@@ -71,14 +76,27 @@
   <br>
 <script>
  
-var height =500, width = 500;
+var margin = {top: 10, right: 20, bottom: 20, left: 50},
+    width = 500 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
 
 var svg = d3.select("body")
             .append("svg")
               .attr("class", "intensityGraph")
-              .attr("width", width)
-              .attr("height", height)
-              .attr("style", "border:1px solid lightgrey;")  
+              .attr("width", width + margin.left + margin.right)
+              .attr("height", height + margin.top + margin.bottom)
+              //.attr("style", "border:1px solid lightgrey;")          
+                .append("g")
+                  .attr("class", "intensityGrp")
+                  .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var intensityTitle = "Intensity Fraunhofer Diffraction Single-Slit";
+d3.select(".intensityGraph")
+  .append("text")
+              .text(intensityTitle)
+                .attr("x", width/2 - (intensityTitle.length/2)*5)
+                .attr("y",margin.top+5)
+
 
 var svg = d3.select("body")
             .append("svg")
@@ -97,11 +115,10 @@ function initPosition(){
   $( "#sliderValuePosition" ).text(position);
 
   $("#sliderPosition").bind( "slide", function(event, ui) { position  = ui.value;
+                                                            renderIntensity();
                                                           $( "#sliderValuePosition" ).text(position);
   });
 
-  console.log(amp(position));
-  console.log(pointerModel(position));
 }
 
 function initNumberOfPaths(){
@@ -112,26 +129,32 @@ function initNumberOfPaths(){
 
   $( "#sliderValueNumberOfPaths" ).text(position);
   $("#sliderNumberOfPaths").bind( "slide", function(event, ui) { nbrOfPaths  = ui.value; 
+                                                                 renderIntensity();
                                                                  $( "#sliderValueNumberOfPaths" ).text(nbrOfPaths);
   });
 
 }
 
-var position = 0 ;
-var nbrOfPaths = 6 ;
+var position = 0;
+var nbrOfPaths = 6;
 var s=300, e=300, lambda=630, a=10, b=0.05;
-var z=10/nbrOfPaths;
+var z = 10 / nbrOfPaths;
+var intensityPoints = [];
+var curve = d3.svg.line()
+      .interpolate("cardinal")
+       .x(function(d) { return d.x; })
+       .y(function(d) { return d.y; })
 
 function phi(_i, _x){
 
   var term1 = Math.sqrt(Math.pow(s,2) + Math.pow(b,2)*Math.pow(0.5 - (_i/nbrOfPaths+1),2));
   var term2 = Math.sqrt(Math.pow(e,2) + Math.pow(_x - b*(0.5 - (_i/nbrOfPaths+1)),2));
 
-  return (term1+term2)*(10000000/lambda)
+  return ((term1+term2)*(1000000/lambda))
 }
 
 function deltaPhi(x){
-  return phi(1, x) - phi(2, x)
+  return (phi(1, x) - phi(2, x))
 }
 
 function amp(_x){
@@ -148,7 +171,7 @@ function amp(_x){
                       0);
   sumSin *= sumSin;
   sumCos *= sumCos;
-  return sumSin+sumCos
+  return (sumSin+sumCos)
 }
 
 function pointerModel(_x){
@@ -156,7 +179,6 @@ function pointerModel(_x){
   var pointerValues = [];
   for (var j = 1; j <= nbrOfPaths - 1; j++) {
    
-
     //create [[val1,val2],[val3,val4]] then push it
     var val1 = _x + _.reduce(d3.range(1,j), 
                         function(memo, num){ 
@@ -188,11 +210,90 @@ function pointerModel(_x){
 }
 
 
-function initQuantities(){
-
-}
-
+var initValue=0;
 function renderIntensity(){
+  
+  intensityPoints = [];
+  for (var j = -a; j <= a ; j+=0.1) {
+     var rj = j.toFixed(2);
+    intensityPoints.push(amp(rj)/Math.pow(nbrOfPaths,2));
+    console.log(rj);
+    if(rj==0) initValue = amp(rj)/Math.pow(nbrOfPaths,2);
+  }
+
+  var intensityExtent = d3.extent(intensityPoints);
+
+  // this is the transformation function for input space to pixel space
+  var x = d3.scale.linear()
+                    .domain([-a,a])
+                    .range([20, width]);
+  
+  // Create x axis.
+  var xAxis = d3.svg.axis()
+                      .scale(x)
+                      .orient("bottom")
+                      .ticks(5);
+
+  var y = d3.scale.linear()
+                    .domain(intensityExtent)
+                    .range([height,20]);
+    
+  for (var j = 0; j < intensityPoints.length ; j++) {
+    var rj = -a+j*0.1;
+    rj = rj.toFixed(2);
+    intensityPoints[j] = {x:x(rj), y:y(intensityPoints[j])};
+  }
+
+  var yAxis = d3.svg.axis()
+                      .scale(y)
+                      .orient("left") 
+                      .ticks(5);
+
+  if (d3.select(".intensityPath")[0][0]==null){
+      var intensity =  d3.select(".intensityGrp")
+                       .data([intensityPoints])
+                       .append("path")
+                              .attr("class", "intensityPath")
+                              .attr("d", function(d){ return curve(d); })  
+                               .attr("fill","none")
+                               .attr("stroke", "black")
+                               .attr("opacity",1)
+
+      var positionPoints = [{x: x(position), y: y(initValue)},{x: x(position), y: height}];
+      var positionLine =  d3.select(".intensityGrp")
+                       .data([positionPoints])
+                       .append("path")
+                              .attr("class", "positionLine")
+                              .attr("d", function(d){ return curve(d); })  
+                               .attr("fill","none")
+                               .attr("stroke", "red")
+                               .attr("opacity",1)
+
+          //append x-axis 
+      d3.select(".intensityGrp")
+          .append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + height + ")")
+            .call(xAxis); 
+
+      //append the y-axis 
+      d3.select(".intensityGrp")
+          .append("g")
+            .attr("class", "y axis") 
+            .call(yAxis);
+  }else{
+          
+          var intensity =  d3.select(".intensityPath")
+                               .data([intensityPoints])
+                                      .attr("d", function(d){ return curve(d); })  
+           //intensityPoints.forEach(function(obj){console.log(x(obj.x))});
+           var yval = intensityPoints.filter(function(obj){return obj.x == x(position)})[0].y;
+
+          var positionPoints = [{x: x(position), y: yval},{x: x(position), y: height}];
+          var positionLine =  d3.select(".positionLine")
+                                 .data([positionPoints]) 
+                                        .attr("d", function(d){ return curve(d); })  
+  }
 
 }
 
@@ -206,6 +307,7 @@ function renderCurrentArrows(){
 
 initNumberOfPaths();
 initPosition();
+renderIntensity();
 
 </script>
 
