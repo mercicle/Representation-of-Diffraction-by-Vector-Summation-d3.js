@@ -31,6 +31,13 @@
   shape-rendering: crispEdges;
 }
 
+path.link {
+  fill: none;
+  stroke: #000;
+  stroke-width: 2px;
+  cursor: default;
+}
+
 #sliderNumberOfPaths{
   width: 200px; 
   margin: 10px;
@@ -84,8 +91,7 @@ var svg = d3.select("body")
             .append("svg")
               .attr("class", "intensityGraph")
               .attr("width", width + margin.left + margin.right)
-              .attr("height", height + margin.top + margin.bottom)
-              //.attr("style", "border:1px solid lightgrey;")          
+              .attr("height", height + margin.top + margin.bottom)         
                 .append("g")
                   .attr("class", "intensityGrp")
                   .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
@@ -101,9 +107,11 @@ d3.select(".intensityGraph")
 var svg = d3.select("body")
             .append("svg")
               .attr("class", "arrowGraph")
-              .attr("width", width)
-              .attr("height", height)
-              .attr("style", "border:1px solid lightgrey;")  
+              .attr("width", width + margin.left + margin.right)
+              .attr("height", height + margin.top + margin.bottom)
+              .append("g")
+                  .attr("class", "arrowGrp")
+                  .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 
 function initPosition(){
@@ -116,6 +124,7 @@ function initPosition(){
 
   $("#sliderPosition").bind( "slide", function(event, ui) { position  = ui.value;
                                                             renderIntensity();
+                                                            renderCurrentArrows();
                                                           $( "#sliderValuePosition" ).text(position);
   });
 
@@ -124,19 +133,21 @@ function initPosition(){
 function initNumberOfPaths(){
 
   $(function(){
-      $( "#sliderNumberOfPaths" ).slider({min: 2, max: 10, step:1, value:6});
+      $( "#sliderNumberOfPaths" ).slider({min: 2, max: 10, step:1, value:nbrOfPaths});
   });
 
-  $( "#sliderValueNumberOfPaths" ).text(position);
+  $( "#sliderValueNumberOfPaths" ).text(nbrOfPaths);
   $("#sliderNumberOfPaths").bind( "slide", function(event, ui) { nbrOfPaths  = ui.value; 
+                                                                 z = 10 / nbrOfPaths;
                                                                  renderIntensity();
+                                                                 renderCurrentArrows();
                                                                  $( "#sliderValueNumberOfPaths" ).text(nbrOfPaths);
   });
 
 }
 
 var position = 0;
-var nbrOfPaths = 6;
+var nbrOfPaths = 3;
 var s=300, e=300, lambda=630, a=10, b=0.05;
 var z = 10 / nbrOfPaths;
 var intensityPoints = [];
@@ -144,11 +155,25 @@ var curve = d3.svg.line()
       .interpolate("cardinal")
        .x(function(d) { return d.x; })
        .y(function(d) { return d.y; })
+var xScaleArrows,xAxisArrows,yScaleArrows,yAxisArrows;
+
+var path = d3.select(".arrowGraph").append('svg:g').selectAll('path');
+
+d3.select(".arrowGraph").append('svg:defs').append('svg:marker')
+    .attr('id', 'end-arrow')
+    .attr('viewBox', '0 -5 10 10')
+    .attr('refX', 6)
+    .attr('markerWidth', 5)
+    .attr('markerHeight', 5)
+    .attr('orient', 'auto')
+  .append('svg:path')
+    .attr('d', 'M0,-5L10,0L0,5')
+    .attr('fill', '#000')
 
 function phi(_i, _x){
 
-  var term1 = Math.sqrt(Math.pow(s,2) + Math.pow(b,2)*Math.pow(0.5 - (_i/nbrOfPaths+1),2));
-  var term2 = Math.sqrt(Math.pow(e,2) + Math.pow(_x - b*(0.5 - (_i/nbrOfPaths+1)),2));
+  var term1 = Math.sqrt(Math.pow(s,2) + Math.pow(b,2)*Math.pow(0.5 - (_i/(nbrOfPaths+1)),2));
+  var term2 = Math.sqrt(Math.pow(e,2) + Math.pow(_x - b*(0.5 - (_i/(nbrOfPaths+1))),2));
 
   return ((term1+term2)*(1000000/lambda))
 }
@@ -177,7 +202,7 @@ function amp(_x){
 function pointerModel(_x){
 
   var pointerValues = [];
-  for (var j = 1; j <= nbrOfPaths - 1; j++) {
+  for (var j = 1; j <= nbrOfPaths; j++) {
    
     //create [[val1,val2],[val3,val4]] then push it
     var val1 = _x + _.reduce(d3.range(1,j), 
@@ -202,7 +227,7 @@ function pointerModel(_x){
                         },
                       0);
 
-    pointerValues.push([[val1,val2],[val3,val4]]);
+    pointerValues.push([{x:val1,y:val2},{x:val3,y:val4}]);
 
   }
 
@@ -210,14 +235,28 @@ function pointerModel(_x){
 }
 
 
-var initValue=0;
+function computeIntensity(){
+  intensityPoints = [];
+  for (var j = -a; j <= a ; j+=0.1) {
+     var rj = j.toFixed(2);
+    intensityPoints.push(amp(rj)/Math.pow(nbrOfPaths,2));
+    if(rj==0) initValue = amp(rj)/Math.pow(nbrOfPaths,2);
+  }
+}
+
+function getArrows(_x){
+    return pointerModel(_x)
+}
+
+
+var initValue = 0;
+
 function renderIntensity(){
   
   intensityPoints = [];
   for (var j = -a; j <= a ; j+=0.1) {
      var rj = j.toFixed(2);
     intensityPoints.push(amp(rj)/Math.pow(nbrOfPaths,2));
-    console.log(rj);
     if(rj==0) initValue = amp(rj)/Math.pow(nbrOfPaths,2);
   }
 
@@ -239,8 +278,7 @@ function renderIntensity(){
                     .range([height,20]);
     
   for (var j = 0; j < intensityPoints.length ; j++) {
-    var rj = -a+j*0.1;
-    rj = rj.toFixed(2);
+    var rj = (-a+j*0.1).toFixed(2);
     intensityPoints[j] = {x:x(rj), y:y(intensityPoints[j])};
   }
 
@@ -286,7 +324,7 @@ function renderIntensity(){
           var intensity =  d3.select(".intensityPath")
                                .data([intensityPoints])
                                       .attr("d", function(d){ return curve(d); })  
-           //intensityPoints.forEach(function(obj){console.log(x(obj.x))});
+ 
            var yval = intensityPoints.filter(function(obj){return obj.x == x(position)})[0].y;
 
           var positionPoints = [{x: x(position), y: yval},{x: x(position), y: height}];
@@ -297,18 +335,59 @@ function renderIntensity(){
 
 }
 
-function renderCurrentIntensityLine(){
+function initArrowChart(){
+
+     xScaleArrows = d3.scale.linear().domain([-12,12]).range([20, width]);
+     xAxisArrows = d3.svg.axis().scale(xScaleArrows).orient("bottom").ticks(5);
+     yScaleArrows = d3.scale.linear().domain([-13,2]).range([height,20]);
+     yAxisArrows = d3.svg.axis().scale(yScaleArrows).orient("left").ticks(5);
+
+            //append x-axis 
+        d3.select(".arrowGrp")
+            .append("g")
+              .attr("class", "x axis")
+              .attr("transform", "translate(0," + height + ")")
+              .call(xAxisArrows); 
+
+        //append the y-axis 
+        d3.select(".arrowGrp")
+            .append("g")
+              .attr("class", "y axis") 
+              .call(yAxisArrows);
 
 }
 
 function renderCurrentArrows(){
+ 
+  var arrows = getArrows(position);
 
+  _.map(arrows, function(value,key,list){ value[0].x = xScaleArrows(value[0].x);
+                                                          value[0].y = yScaleArrows(value[0].y);
+                                                          value[1].x = xScaleArrows(value[1].x);
+                                                          value[1].y = yScaleArrows(value[1].y);
+                                                        }
+        );
+
+  path = path.data(arrows);
+ 
+  path.enter().append('svg:path')
+                .attr('class', 'link')
+                .attr("d", function(d){ return curve(d); })  
+                 
+                .style('marker-end', function(d) { return  'url(#end-arrow)'; })
+
+  // remove old links
+  path.exit().remove();
+ 
 }
+
+
 
 initNumberOfPaths();
 initPosition();
 renderIntensity();
-
+initArrowChart();
+renderCurrentArrows();
 </script>
 
 
